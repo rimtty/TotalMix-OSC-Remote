@@ -13,8 +13,8 @@
     <line x1="104" y1="104" x2="99" y2="99"/>
   </g>
   <!-- value arc -->
-  <path d="M 41 103 A 44 44 0 0 1 41 41" fill="none" stroke="#f5a623" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 41 103 A 44 44 0 0 1 41 41" fill="none" stroke="#21d24c" stroke-width="6" stroke-linecap="round"/>
   <!-- pointer -->
-  <line x1="72" y1="72" x2="46" y2="49" stroke="#f5a623" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="72" cy="72" r="7" fill="#f5a623"/>
+  <line x1="72" y1="72" x2="46" y2="49" stroke="#21d24c" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="72" cy="72" r="7" fill="#21d24c"/>
 </svg>

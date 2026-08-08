@@ -11,10 +11,10 @@
   <circle cx="72" cy="66" r="26" fill="#26262a"/>
   <!-- value arc -->
   <path d="M 47.5 90.5 A 34.5 34.5 0 1 1 96.5 90.5" fill="none" stroke="#3a3a40" stroke-width="5" stroke-linecap="round" transform="translate(0,0)"/>
-  <path d="M 47.5 90.5 A 34.5 34.5 0 0 1 40 55" fill="none" stroke="#f5a623" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 47.5 90.5 A 34.5 34.5 0 0 1 40 55" fill="none" stroke="#21d24c" stroke-width="5" stroke-linecap="round"/>
   <!-- pointer -->
-  <line x1="72" y1="66" x2="52" y2="48" stroke="#f5a623" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="72" cy="66" r="6" fill="#f5a623"/>
+  <line x1="72" y1="66" x2="52" y2="48" stroke="#21d24c" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="72" cy="66" r="6" fill="#21d24c"/>
   <!-- OSC wave glyph -->
   <path d="M 30 120 q 7 -12 14 0 t 14 0 t 14 0 t 14 0 t 14 0 t 14 0" fill="none" stroke="#e8e8ec" stroke-width="4" stroke-linecap="round"/>
 </svg>

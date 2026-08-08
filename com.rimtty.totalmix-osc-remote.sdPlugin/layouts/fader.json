@@ -20,7 +20,7 @@
       "rect": [76, 40, 108, 32],
       "font": { "size": 22, "weight": 600 },
       "alignment": "right",
-      "color": "#F5A623"
+      "color": "#21D24C"
     },
     {
       "key": "indicator",
@@ -29,7 +29,7 @@
       "subtype": 4,
       "border_w": 0,
       "bar_bg_c": "0:#2A2A2E,1:#2A2A2E",
-      "bar_fill_c": "#F5A623",
+      "bar_fill_c": "#21D24C",
       "range": { "min": 0, "max": 100 },
       "value": 0
     }
