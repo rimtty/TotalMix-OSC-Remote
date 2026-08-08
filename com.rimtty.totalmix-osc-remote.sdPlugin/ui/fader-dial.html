@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Fader Dial</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <fieldset>
+      <legend>Target</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Fader</div>
+        <div class="sdpi-item-value">
+          <select data-setting="target">
+            <option value="master">Main Out (mastervolume)</option>
+            <option value="strip">Output channel</option>
+          </select>
+        </div>
+      </div>
+      <div class="sdpi-item strip-only">
+        <div class="sdpi-item-label">Device</div>
+        <div class="sdpi-item-value"><select data-setting="device"></select></div>
+      </div>
+      <div class="sdpi-item strip-only">
+        <div class="sdpi-item-label">Channel</div>
+        <div class="sdpi-item-value"><select data-setting="strip"></select></div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Title</div>
+        <div class="sdpi-item-value"><input type="text" data-setting="title" placeholder="Main" /></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dial</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Step</div>
+        <div class="sdpi-item-value">
+          <input type="number" data-setting="stepPct" min="0.1" max="10" step="0.1" placeholder="1" />
+          <span class="suffix">%</span>
+        </div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Fine step</div>
+        <div class="sdpi-item-value">
+          <input type="number" data-setting="fineStepPct" min="0.01" max="5" step="0.01" placeholder="0.1" />
+          <span class="suffix">% (press &amp; turn)</span>
+        </div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Press</div>
+        <div class="sdpi-item-value">
+          <select data-setting="pushAction">
+            <option value="reset0db">Reset to 0 dB</option>
+            <option value="mute">Mute toggle</option>
+          </select>
+        </div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Preset</div>
+        <div class="sdpi-item-value">
+          <input type="number" data-setting="presetDb" min="-65" max="6" step="0.5" placeholder="0" />
+          <span class="suffix">dB (long touch)</span>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>TotalMix FX Connection</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Host</div>
+        <div class="sdpi-item-value"><input type="text" data-global="host" placeholder="127.0.0.1" /></div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Port in</div>
+        <div class="sdpi-item-value"><input type="number" data-global="sendPort" placeholder="7001" /></div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Port out</div>
+        <div class="sdpi-item-value"><input type="number" data-global="recvPort" placeholder="9001" /></div>
+      </div>
+      <div class="hint">TotalMix FX: Options → Settings → OSC — set "Port incoming" = Port in, "Port outgoing" = Port out, enable "In Use". Bank size 16 recommended.</div>
+    </fieldset>
+  </div>
+  <script src="pi.js"></script>
+  <script src="target.js"></script>
+</body>
+</html>

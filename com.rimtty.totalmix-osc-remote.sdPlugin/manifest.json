@@ -1,0 +1,72 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "UUID": "com.rimtty.totalmix-osc-remote",
+  "Name": "TotalMix OSC Remote",
+  "Version": "0.1.0.0",
+  "Author": "rimtty",
+  "Description": "Control RME TotalMix FX via OSC — true Float32 faders, mute and fader dim.",
+  "URL": "https://github.com/rimtty/TotalMix-OSC-Remote",
+  "Icon": "imgs/plugin/icon",
+  "Category": "TotalMix OSC Remote",
+  "CategoryIcon": "imgs/plugin/category-icon",
+  "CodePath": "bin/plugin.mjs",
+  "SDKVersion": 3,
+  "Nodejs": {
+    "Version": "24",
+    "Debug": "enabled"
+  },
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "OS": [
+    { "Platform": "windows", "MinimumVersion": "10" },
+    { "Platform": "mac", "MinimumVersion": "12" }
+  ],
+  "Actions": [
+    {
+      "UUID": "com.rimtty.totalmix-osc-remote.fader-dial",
+      "Name": "Fader Dial",
+      "Tooltip": "Rotate to control a TotalMix FX fader (Float32 OSC). Touch to mute, long-touch to jump to preset.",
+      "Icon": "imgs/actions/list-dial",
+      "Controllers": ["Encoder"],
+      "PropertyInspectorPath": "ui/fader-dial.html",
+      "Encoder": {
+        "layout": "layouts/fader.json",
+        "Icon": "imgs/actions/dial-fader",
+        "TriggerDescription": {
+          "Rotate": "Volume",
+          "Push": "Reset to 0 dB / Mute",
+          "Touch": "Mute",
+          "LongTouch": "Jump to preset"
+        }
+      },
+      "States": [{ "Image": "imgs/actions/dial-fader" }]
+    },
+    {
+      "UUID": "com.rimtty.totalmix-osc-remote.mute-key",
+      "Name": "Mute",
+      "Tooltip": "Toggle mute of a TotalMix FX channel. State follows TotalMix feedback.",
+      "Icon": "imgs/actions/list-mute",
+      "Controllers": ["Keypad"],
+      "PropertyInspectorPath": "ui/mute-key.html",
+      "DisableAutomaticStates": true,
+      "States": [
+        { "Image": "imgs/actions/key-mute-off", "Name": "Unmuted" },
+        { "Image": "imgs/actions/key-mute-on", "Name": "Muted" }
+      ]
+    },
+    {
+      "UUID": "com.rimtty.totalmix-osc-remote.fader-dim-key",
+      "Name": "Fader Dim",
+      "Tooltip": "Attenuate a TotalMix FX fader by a set amount (default -20 dB) and restore it.",
+      "Icon": "imgs/actions/list-fader-dim",
+      "Controllers": ["Keypad"],
+      "PropertyInspectorPath": "ui/fader-dim-key.html",
+      "DisableAutomaticStates": true,
+      "States": [
+        { "Image": "imgs/actions/key-fader-dim-off", "Name": "Normal" },
+        { "Image": "imgs/actions/key-fader-dim-on", "Name": "Dimmed" }
+      ]
+    }
+  ]
+}

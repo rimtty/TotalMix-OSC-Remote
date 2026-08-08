@@ -1,0 +1,82 @@
+/* Property Inspector styling, matched to the Stream Deck dark UI */
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #2d2d2d;
+  color: #d8d8d8;
+  font-family: "Segoe UI", -apple-system, "Helvetica Neue", sans-serif;
+  font-size: 13px;
+}
+
+.sdpi-wrapper {
+  padding: 8px 12px 16px;
+}
+
+fieldset {
+  border: none;
+  border-top: 1px solid #3d3d3d;
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+}
+
+legend {
+  color: #969696;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-right: 8px;
+}
+
+.sdpi-item {
+  display: flex;
+  align-items: center;
+  margin: 6px 0;
+  gap: 8px;
+}
+
+.sdpi-item-label {
+  flex: 0 0 84px;
+  text-align: right;
+  color: #969696;
+}
+
+.sdpi-item-value {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  box-sizing: border-box;
+  background: #3d3d3d;
+  color: #d8d8d8;
+  border: 1px solid #262626;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 13px;
+}
+
+input:focus,
+select:focus {
+  outline: 1px solid #f5a623;
+}
+
+.hint {
+  color: #7a7a7a;
+  font-size: 11px;
+  margin: 2px 0 0 92px;
+}
+
+.suffix {
+  color: #969696;
+  flex: 0 0 auto;
+}

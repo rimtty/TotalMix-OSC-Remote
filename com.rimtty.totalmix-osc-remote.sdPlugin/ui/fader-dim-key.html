@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Fader Dim</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <fieldset>
+      <legend>Target</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Fader</div>
+        <div class="sdpi-item-value">
+          <select data-setting="target">
+            <option value="master">Main Out (mastervolume)</option>
+            <option value="strip">Output channel</option>
+          </select>
+        </div>
+      </div>
+      <div class="sdpi-item strip-only">
+        <div class="sdpi-item-label">Device</div>
+        <div class="sdpi-item-value"><select data-setting="device"></select></div>
+      </div>
+      <div class="sdpi-item strip-only">
+        <div class="sdpi-item-label">Channel</div>
+        <div class="sdpi-item-value"><select data-setting="strip"></select></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dim</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Mode</div>
+        <div class="sdpi-item-value">
+          <select data-setting="mode">
+            <option value="db">Attenuate by dB</option>
+            <option value="factor">Multiply fader value</option>
+          </select>
+        </div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Amount</div>
+        <div class="sdpi-item-value">
+          <input type="number" data-setting="dimDb" min="-60" max="-1" step="1" placeholder="-20" />
+          <span class="suffix">dB</span>
+        </div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Factor</div>
+        <div class="sdpi-item-value">
+          <input type="number" data-setting="factor" min="0" max="1" step="0.05" placeholder="0.1" />
+          <span class="suffix">× (factor mode)</span>
+        </div>
+      </div>
+      <div class="hint">-20 dB ≈ perceived "10% volume". The key remembers the fader value and restores it on release. If the fader moves elsewhere while dimmed, the stored value is discarded for safety.</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>TotalMix FX Connection</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Host</div>
+        <div class="sdpi-item-value"><input type="text" data-global="host" placeholder="127.0.0.1" /></div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Port in</div>
+        <div class="sdpi-item-value"><input type="number" data-global="sendPort" placeholder="7001" /></div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Port out</div>
+        <div class="sdpi-item-value"><input type="number" data-global="recvPort" placeholder="9001" /></div>
+      </div>
+    </fieldset>
+  </div>
+  <script src="pi.js"></script>
+  <script src="target.js"></script>
+</body>
+</html>
