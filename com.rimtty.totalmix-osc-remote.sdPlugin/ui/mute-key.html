@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mute</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <fieldset>
+      <legend>Target</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Channel</div>
+        <div class="sdpi-item-value">
+          <select data-setting="target">
+            <option value="strip">Output channel (mute)</option>
+            <option value="master">Main Out (Dim toggle)</option>
+          </select>
+        </div>
+      </div>
+      <div class="sdpi-item strip-only">
+        <div class="sdpi-item-label">Device</div>
+        <div class="sdpi-item-value"><select data-setting="device"></select></div>
+      </div>
+      <div class="sdpi-item strip-only">
+        <div class="sdpi-item-label">Channel</div>
+        <div class="sdpi-item-value"><select data-setting="strip"></select></div>
+      </div>
+      <div class="hint">Main Out has no dedicated OSC mute — the Main option toggles TotalMix Dim instead (set the Dim amount in TotalMix).</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>TotalMix FX Connection</legend>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Host</div>
+        <div class="sdpi-item-value"><input type="text" data-global="host" placeholder="127.0.0.1" /></div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Port in</div>
+        <div class="sdpi-item-value"><input type="number" data-global="sendPort" placeholder="7001" /></div>
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Port out</div>
+        <div class="sdpi-item-value"><input type="number" data-global="recvPort" placeholder="9001" /></div>
+      </div>
+    </fieldset>
+  </div>
+  <script src="pi.js"></script>
+  <script src="target.js"></script>
+</body>
+</html>
