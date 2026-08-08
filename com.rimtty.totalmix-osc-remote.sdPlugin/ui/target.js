@@ -1,10 +1,11 @@
-// Shared target-selection logic (Main / Output strip + device/strip pickers).
+// Shared target-selection logic (Main / strip + row(bus)/device/strip pickers).
 "use strict";
 
 /* global pi */
 
 function initTarget() {
   const targetSel = document.querySelector('[data-setting="target"]');
+  const busSel = document.querySelector('[data-setting="bus"]');
   const deviceSel = document.querySelector('[data-setting="device"]');
   const stripSel = document.querySelector('[data-setting="strip"]');
   const stripRows = document.querySelectorAll(".strip-only");
@@ -16,10 +17,19 @@ function initTarget() {
     });
   }
 
+  function requestStrips() {
+    pi.sendToPlugin({
+      event: "getStrips",
+      device: deviceSel.value || pi.settings.device,
+      bus: busSel ? busSel.value : undefined,
+    });
+  }
+
   document.addEventListener("pi-ready", () => {
     pi.sendToPlugin({ event: "getDevices" });
-    pi.sendToPlugin({ event: "getStrips", device: pi.settings.device });
     if (!targetSel.value) targetSel.value = pi.settings.target || "master";
+    if (busSel && pi.settings.bus) busSel.value = pi.settings.bus;
+    requestStrips();
     updateVisibility();
   });
 
@@ -33,10 +43,10 @@ function initTarget() {
   });
 
   targetSel.addEventListener("change", updateVisibility);
-  deviceSel.addEventListener("change", () => {
-    // 設定保存の往復を待たずに、選択中デバイスを明示してストリップ一覧を要求する
-    pi.sendToPlugin({ event: "getStrips", device: deviceSel.value });
-  });
+  if (busSel) {
+    busSel.addEventListener("change", requestStrips);
+  }
+  deviceSel.addEventListener("change", requestStrips);
 }
 
 initTarget();

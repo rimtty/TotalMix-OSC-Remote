@@ -1,6 +1,6 @@
 import dgram from "node:dgram";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { OscClient } from "../src/osc/client";
+import { OscClient, type BusMessage } from "../src/osc/client";
 import { decodePacket, encodeMessage } from "../src/osc/message";
 
 /** 偽 TotalMix: 受信パケットを記録する UDP ソケット */
@@ -104,5 +104,62 @@ describe("OscClient (UDP loopback integration)", () => {
 
     expect(client.getFloat("/1/mastervolume")).toBeCloseTo(0.75, 4);
     expect(client.getString("/1/mastervolumeVal")).toBe("-3.5 dB");
+  });
+
+  it("switches bus before sending bank-relative messages (sendFloatTo)", async () => {
+    await fake.waitFor("/1/busOutput"); // 初期 pin 完了を待つ
+    fake.received.length = 0;
+
+    const sendDone = client.sendFloatTo("playback", "/1/volume4", 0.5);
+    await fake.waitFor("/1/busPlayback");
+    // エコーを返してバス確定させる
+    fake.socket.send(encodeMessage("/1/busPlayback", [{ type: "f", value: 1 }]), recvPort, "127.0.0.1");
+    await sendDone;
+    await fake.waitFor("/1/volume4");
+
+    const busIdx = fake.received.findIndex((m) => m.address === "/1/busPlayback");
+    const volIdx = fake.received.findIndex((m) => m.address === "/1/volume4");
+    expect(busIdx).toBeGreaterThanOrEqual(0);
+    expect(volIdx).toBeGreaterThan(busIdx);
+    const bankStart = fake.received.find((m) => m.address === "/setBankStart");
+    expect(bankStart?.args[0]?.type).toBe("f");
+    expect(client.activeBus).toBe("playback");
+  });
+
+  it("namespaces bank-relative feedback per bus", async () => {
+    await fake.waitFor("/1/busOutput");
+
+    const received: string[] = [];
+    client.on("message", (m: BusMessage) => received.push(`${m.bus}${m.address}`));
+
+    const sendToClient = (buf: Buffer) =>
+      new Promise<void>((resolve, reject) =>
+        fake.socket.send(buf, recvPort, "127.0.0.1", (err) => (err ? reject(err) : resolve())),
+      );
+    const until = (marker: string, timeoutMs = 2000) =>
+      new Promise<void>((resolve, reject) => {
+        const deadline = Date.now() + timeoutMs;
+        const poll = () => {
+          if (received.includes(marker)) return resolve();
+          if (Date.now() > deadline) return reject(new Error(`timeout waiting for ${marker}`));
+          setTimeout(poll, 10);
+        };
+        poll();
+      });
+
+    // input バスのダンプ: バスエコー → volume3
+    await sendToClient(encodeMessage("/1/busInput", [{ type: "f", value: 1 }]));
+    await sendToClient(encodeMessage("/1/volume3", [{ type: "f", value: 0.25 }]));
+    await until("input/1/volume3");
+
+    // output バスへ切替 → 同じ volume3 に別の値
+    await sendToClient(encodeMessage("/1/busOutput", [{ type: "f", value: 1 }]));
+    await sendToClient(encodeMessage("/1/volume3", [{ type: "f", value: 0.75 }]));
+    await until("output/1/volume3");
+
+    expect(client.getFloat("/1/volume3", "input")).toBeCloseTo(0.25, 4);
+    expect(client.getFloat("/1/volume3", "output")).toBeCloseTo(0.75, 4);
+    // バス非依存アドレスは名前空間化されない
+    expect(client.getFloat("/1/mastervolume", "input")).toBe(client.getFloat("/1/mastervolume", "output"));
   });
 });
