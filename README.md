@@ -30,7 +30,10 @@ Generic OSC plugins often send integer values — which TotalMix FX silently ign
 
 ## Installation
 
-Until a packaged release is published, build from source:
+Download the latest `com.rimtty.totalmix-osc-remote.streamDeckPlugin` from the [Releases page](https://github.com/rimtty/TotalMix-OSC-Remote/releases/latest) and double-click it — the Stream Deck app installs it.
+
+<details>
+<summary>Building from source (for development)</summary>
 
 ```bash
 git clone https://github.com/rimtty/TotalMix-OSC-Remote.git
@@ -42,6 +45,8 @@ npx @elgato/cli link com.rimtty.totalmix-osc-remote.sdPlugin
 ```
 
 A `.streamDeckPlugin` file is also produced by CI for every commit (see the Actions artifacts).
+
+</details>
 
 ## TotalMix FX setup
 
@@ -95,6 +100,10 @@ RME **TotalMix FX** を Elgato **Stream Deck** から OSC で操作するプラ�
 - **Fader Dim キー**: 現在値を記憶して **-20 dB(≒音量10%)** などに減衰、再押下で復元。Dim 中に外部で値が動いたら記憶値を破棄(爆音事故防止)
 - **パッチ段の指定**: Hardware Inputs / Software Playback / Hardware Outputs の任意の行+Main Out
 - **チャンネル名のライブ取得**: モノ分割やリネームをしていても正しい番号・名前で選択可能(UCX II / UCX / Babyface Pro の内蔵定義にフォールバック)
+
+## インストール
+
+[Releases ページ](https://github.com/rimtty/TotalMix-OSC-Remote/releases/latest)から `com.rimtty.totalmix-osc-remote.streamDeckPlugin` をダウンロードしてダブルクリックするだけでインストールできます。
 
 ## セットアップ
 
