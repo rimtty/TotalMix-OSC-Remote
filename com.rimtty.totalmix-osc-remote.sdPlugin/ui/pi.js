@@ -26,6 +26,7 @@ window.connectElgatoStreamDeckSocket = function (inPort, inUUID, inRegisterEvent
     sendRaw({ event: "getGlobalSettings", context: piUuid });
     bindInputs();
     applySettingsToInputs();
+    syncSelectDefaults();
     document.dispatchEvent(new CustomEvent("pi-ready"));
   };
   websocket.onmessage = (msg) => {
@@ -103,6 +104,25 @@ function applyGlobalsToInputs() {
   });
 }
 
+/**
+ * select が表示している値と保存済み設定のズレを防ぐ:
+ * 未保存の setting キーには、現在表示中の値をそのまま永続化する。
+ * (表示は「Output channel」なのに実際は未設定でコード側デフォルトの
+ *  「master」が使われる、という事故を防ぐ)
+ */
+function syncSelectDefaults() {
+  let changed = false;
+  document.querySelectorAll("select[data-setting]").forEach((el) => {
+    const key = el.dataset.setting;
+    const stored = settings[key];
+    if ((stored === undefined || stored === null || stored === "") && el.value !== "") {
+      settings[key] = el.value;
+      changed = true;
+    }
+  });
+  if (changed) persistSettings();
+}
+
 /** select要素へ {value,label}[] を流し込む(現値は維持) */
 function fillSelect(el, items, currentValue) {
   el.innerHTML = "";
@@ -115,6 +135,7 @@ function fillSelect(el, items, currentValue) {
   if (currentValue !== undefined && currentValue !== null && currentValue !== "") {
     el.value = String(currentValue);
   }
+  syncSelectDefaults();
 }
 
 // ページ側スクリプトから使う公開 API
