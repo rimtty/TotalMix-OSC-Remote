@@ -254,5 +254,5 @@ SDK 調査結果(2026-08-08、公式ドキュメント確認済み)に基づく�
 - [x] フェーダーテーパー(0 dB ≈ 0.8172、実測検証済み近似式)— 反映済み
 - [x] UCX II / UCX / Babyface Pro の出力チャンネル構成 — [OSC-ENDPOINTS.md](OSC-ENDPOINTS.md) §5 に反映
 - [x] Stream Deck SDK のレイアウト ID・イベント仕様・アセットサイズ — 本書に反映
-- [ ] 実装前の最終照合: 公式 OSC 対応表 `osc_table_totalmix_new.zip`(xls)のダウンロード確認(M1 で実施)
-- [ ] 実機検証: UCX II で `/1/mastervolume` Float32 送信+フィードバック受信(M1 で実施。[tools/poc/](../tools/poc/) 使用)
+- [ ] 実装前の最終照合: 公式 OSC 対応表 `osc_table_totalmix_new.zip`(xls)のダウンロード確認(未実施。実装が実機で動作したため優先度低)
+- [x] 実機検証(2026-08-08 完了): UCX II + Stream Deck + で全アクション確認 — ダイヤル物理回転で Main フェーダー追従、タッチストリップ dB 表示が TotalMix 実値と一致、Mute/Fader Dim キーの双方向同期、-20 dB 減衰と復元
