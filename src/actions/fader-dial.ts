@@ -7,9 +7,10 @@ import {
   type WillAppearEvent,
   type WillDisappearEvent,
 } from "@elgato/streamdeck";
-import { osc } from "../osc/client";
+import { osc, type BusMessage } from "../osc/client";
 import { dbToFader, faderToDb, formatDb } from "../osc/taper";
 import {
+  targetBus,
   targetMuteAddress,
   targetVolumeAddress,
   targetVolumeValAddress,
@@ -30,15 +31,16 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
 
   constructor() {
     super();
-    osc.on("message", (m: { address: string; args: { value: number | string }[] }) => {
-      void this.onOscMessage(m.address, m.args[0]?.value);
+    osc.on("message", (m: BusMessage) => {
+      void this.onOscMessage(m);
     });
   }
 
   override async onWillAppear(ev: WillAppearEvent<FaderDialSettings>): Promise<void> {
     if (!("setFeedback" in ev.action)) return;
     const settings = ev.payload.settings;
-    const cached = osc.getFloat(targetVolumeAddress(settings));
+    const bus = targetBus(settings) ?? undefined;
+    const cached = osc.getFloat(targetVolumeAddress(settings), bus);
     const state = this.ensureState(ev.action.id, cached);
     await ev.action.setFeedback({
       title: this.titleFor(settings),
@@ -59,10 +61,11 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
     const stepPct = Number(settings.stepPct) || 1;
     const finePct = Number(settings.fineStepPct) || 0.1;
     const step = (ev.payload.pressed ? finePct : stepPct) / 100;
+    const bus = targetBus(settings);
     const addr = targetVolumeAddress(settings);
-    const state = this.ensureState(ev.action.id, osc.getFloat(addr));
+    const state = this.ensureState(ev.action.id, osc.getFloat(addr, bus ?? undefined));
     state.value = clamp01(state.value + ev.payload.ticks * step);
-    osc.sendFloat(addr, state.value);
+    void osc.sendFloatTo(bus, addr, state.value);
     this.queueFeedback(ev.action, state, {
       value: formatDb(faderToDb(state.value)),
       indicator: Math.round(state.value * 100),
@@ -93,10 +96,9 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
     settings: FaderDialSettings,
     value: number,
   ): Promise<void> {
-    const addr = targetVolumeAddress(settings);
     const state = this.ensureState(actionRef.id, value);
     state.value = value;
-    osc.sendFloat(addr, value);
+    void osc.sendFloatTo(targetBus(settings), targetVolumeAddress(settings), value);
     await actionRef.setFeedback({
       value: formatDb(faderToDb(value)),
       indicator: { value: Math.round(value * 100) },
@@ -106,27 +108,31 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
   private toggleMute(settings: FaderDialSettings): void {
     const muteAddr = targetMuteAddress(settings);
     if (muteAddr) {
-      const current = osc.getFloat(muteAddr) ?? 0;
-      osc.sendFloat(muteAddr, current >= 0.5 ? 0 : 1);
+      const bus = targetBus(settings);
+      const current = osc.getFloat(muteAddr, bus ?? undefined) ?? 0;
+      void osc.sendFloatTo(bus, muteAddr, current >= 0.5 ? 0 : 1);
     } else {
       // Main には専用 Mute が無いため Dim をトグルする
       osc.sendFloat("/1/mainDim", 1);
     }
   }
 
-  private async onOscMessage(address: string, value: number | string | undefined): Promise<void> {
+  private async onOscMessage(m: BusMessage): Promise<void> {
+    const value = m.args[0]?.value;
     for (const visible of this.actions) {
       if (!("setFeedback" in visible)) continue;
       const settings = await visible.getSettings();
-      const volAddr = targetVolumeAddress(settings);
+      const bus = targetBus(settings);
+      // strip ターゲットは対象バスのフィードバックのみ反映(master はバス非依存)
+      if (bus && m.bus !== bus) continue;
       const state = this.ensureState(visible.id, undefined);
-      if (address === volAddr && typeof value === "number") {
+      if (m.address === targetVolumeAddress(settings) && typeof value === "number") {
         state.value = value;
         this.queueFeedback(visible, state, {
           indicator: Math.round(value * 100),
           value: formatDb(faderToDb(value)),
         });
-      } else if (address === targetVolumeValAddress(settings) && typeof value === "string") {
+      } else if (m.address === targetVolumeValAddress(settings) && typeof value === "string") {
         // TotalMix からの正式な dB 表示を優先する
         this.queueFeedback(visible, state, { value });
       }
@@ -166,11 +172,14 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
 
   private titleFor(settings: FaderDialSettings): string {
     if (settings.title) return settings.title;
-    return (settings.target ?? "master") === "master" ? "Main" : `Out ${Number(settings.strip) || 1}`;
+    if ((settings.target ?? "master") === "master") return "Main";
+    const busLabel = { input: "In", playback: "PB", output: "Out" }[targetBus(settings) ?? "output"];
+    return `${busLabel} ${Number(settings.strip) || 1}`;
   }
 
   private valueTextFor(settings: FaderDialSettings, value: number): string {
-    return osc.getString(targetVolumeValAddress(settings)) ?? formatDb(faderToDb(value));
+    const bus = targetBus(settings) ?? undefined;
+    return osc.getString(targetVolumeValAddress(settings), bus) ?? formatDb(faderToDb(value));
   }
 }
 

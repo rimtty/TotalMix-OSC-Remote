@@ -18,13 +18,35 @@ export const DEFAULT_CONFIG: OscConfig = {
 
 export type OscStatus = "stopped" | "listening" | "error";
 
+/** TotalMix のミキサー行(パッチ段) */
+export type Bus = "input" | "playback" | "output";
+
+export const BUS_ADDRESS: Record<Bus, string> = {
+  input: "/1/busInput",
+  playback: "/1/busPlayback",
+  output: "/1/busOutput",
+};
+
+/** 現在選択中のバスに依存する(バンク相対の)アドレスか */
+const BANK_RELATIVE =
+  /^\/1\/(volume\d+(Val)?|pan\d+(Val)?|mute\/1\/\d+|solo\/1\/\d+|trackname\d+|level\d+(Left|Right))$/;
+
+/** バス確定を待つ最大時間。エコーが来なくても楽観的に進む */
+const BUS_SWITCH_TIMEOUT_MS = 400;
+
+export interface BusMessage extends OscMessage {
+  /** このメッセージ受信時点で TotalMix 側が選択していた(と追跡している)バス */
+  bus: Bus;
+}
+
 /**
  * 全アクションで共有する OSC/UDP シングルトンクライアント。
  *
  * - 送信は常に Float32(TotalMix は Int を無視する)
- * - 起動時にバンク固定(/1/busOutput 1.0 → /setBankStart 0)を送る
- * - 受信値はキャッシュし "message" イベントで配信する。受信値の再送信は
- *   TotalMix 側の丸めで音量がクリープするため行わない
+ * - `/1/volume{n}` 等は選択中バスへの相対アドレスのため、`ensureBus()` で
+ *   行(Hardware Input / Software Playback / Hardware Output)を切り替えてから送る
+ * - バンク相対アドレスの受信値はバスごとに分離してキャッシュする
+ * - 受信値の再送信は TotalMix 側の丸めで音量がクリープするため行わない
  */
 export class OscClient extends EventEmitter {
   private socket?: dgram.Socket;
@@ -32,6 +54,10 @@ export class OscClient extends EventEmitter {
   private cache = new Map<string, number | string>();
   private _status: OscStatus = "stopped";
   private lastError?: string;
+
+  /** TotalMix からのエコーで確定した現在バス(初期値はバンク固定時の output) */
+  private confirmedBus: Bus = "output";
+  private busWaiters: { bus: Bus; resolve: () => void; timer: NodeJS.Timeout }[] = [];
 
   get status(): OscStatus {
     return this._status;
@@ -43,6 +69,10 @@ export class OscClient extends EventEmitter {
 
   get currentConfig(): OscConfig {
     return { ...this.config };
+  }
+
+  get activeBus(): Bus {
+    return this.confirmedBus;
   }
 
   configure(cfg: Partial<OscConfig>): void {
@@ -82,6 +112,11 @@ export class OscClient extends EventEmitter {
   }
 
   stop(): void {
+    for (const w of this.busWaiters) {
+      clearTimeout(w.timer);
+      w.resolve();
+    }
+    this.busWaiters = [];
     if (this.socket) {
       try {
         this.socket.close();
@@ -95,14 +130,60 @@ export class OscClient extends EventEmitter {
 
   private handleMessage(m: OscMessage): void {
     const first = m.args[0];
-    if (first !== undefined) this.cache.set(m.address, first.value);
-    this.emit("message", m);
+
+    // バス選択のエコーで現在バスを確定する(状態ダンプの先頭で届く)
+    for (const [bus, address] of Object.entries(BUS_ADDRESS) as [Bus, string][]) {
+      if (m.address === address && typeof first?.value === "number" && first.value >= 0.5) {
+        this.confirmedBus = bus;
+        this.busWaiters = this.busWaiters.filter((w) => {
+          if (w.bus !== bus) return true;
+          clearTimeout(w.timer);
+          w.resolve();
+          return false;
+        });
+      }
+    }
+
+    if (first !== undefined) this.cache.set(this.cacheKey(m.address, this.confirmedBus), first.value);
+    const busMessage: BusMessage = { ...m, bus: this.confirmedBus };
+    this.emit("message", busMessage);
+  }
+
+  private cacheKey(address: string, bus: Bus): string {
+    return BANK_RELATIVE.test(address) ? `${bus}|${address}` : address;
   }
 
   sendFloat(address: string, value: number): void {
     if (!this.socket) this.restart();
     const packet = encodeMessage(address, [{ type: "f", value }]);
     this.socket?.send(packet, this.config.sendPort, this.config.host);
+  }
+
+  /**
+   * 対象バスを選択してから送信する。バス切替が発生した場合は
+   * TotalMix のエコー(またはタイムアウト)まで待つ。
+   * @returns switched: バス切替を送ったかどうか
+   */
+  async ensureBus(bus: Bus): Promise<{ switched: boolean }> {
+    if (this.confirmedBus === bus) return { switched: false };
+    this.sendFloat(BUS_ADDRESS[bus], 1);
+    this.sendFloat("/setBankStart", 0);
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        // エコーが来なくても楽観的に確定して先へ進む
+        this.confirmedBus = bus;
+        this.busWaiters = this.busWaiters.filter((w) => w.timer !== timer);
+        resolve();
+      }, BUS_SWITCH_TIMEOUT_MS);
+      this.busWaiters.push({ bus, resolve, timer });
+    });
+    return { switched: true };
+  }
+
+  /** bus が null(mastervolume 等のステートレスアドレス)ならそのまま送る */
+  async sendFloatTo(bus: Bus | null, address: string, value: number): Promise<void> {
+    if (bus) await this.ensureBus(bus);
+    this.sendFloat(address, value);
   }
 
   /** バンク固定: Output バス選択+バンク先頭へ。全値フィードバックも誘発する */
@@ -113,16 +194,16 @@ export class OscClient extends EventEmitter {
 
   /** バス再選択でバンク全体の状態ダンプを要求する */
   refresh(): void {
-    this.sendFloat("/1/busOutput", 1);
+    this.sendFloat(BUS_ADDRESS[this.confirmedBus], 1);
   }
 
-  getFloat(address: string): number | undefined {
-    const v = this.cache.get(address);
+  getFloat(address: string, bus?: Bus): number | undefined {
+    const v = this.cache.get(this.cacheKey(address, bus ?? this.confirmedBus));
     return typeof v === "number" ? v : undefined;
   }
 
-  getString(address: string): string | undefined {
-    const v = this.cache.get(address);
+  getString(address: string, bus?: Bus): string | undefined {
+    const v = this.cache.get(this.cacheKey(address, bus ?? this.confirmedBus));
     return typeof v === "string" ? v : undefined;
   }
 }

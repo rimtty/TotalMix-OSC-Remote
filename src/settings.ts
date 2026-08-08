@@ -1,14 +1,22 @@
 /** Shared settings types for actions and the Property Inspector. */
 
+import type { Bus } from "./osc/client";
+
 export type GlobalSettings = {
   host?: string;
   sendPort?: number | string;
   recvPort?: number | string;
 };
 
-/** ターゲット共通: Main(mastervolume)か Output ストリップか */
+/**
+ * ターゲット共通:
+ * - master: Control Room の Main フェーダー(/1/mastervolume、バス非依存)
+ * - strip:  指定バス(パッチ段)の出力/入力/再生ストリップ
+ */
 export type TargetSettings = {
   target?: "master" | "strip";
+  /** パッチ段: Hardware Input / Software Playback / Hardware Output */
+  bus?: Bus;
   device?: string;
   strip?: number | string;
 };
@@ -24,9 +32,7 @@ export type FaderDialSettings = TargetSettings & {
   title?: string;
 };
 
-export type MuteKeySettings = TargetSettings & {
-  /** master 選択時の挙動: mainDim トグル */
-};
+export type MuteKeySettings = TargetSettings;
 
 export type FaderDimKeySettings = TargetSettings & {
   mode?: "db" | "factor";
@@ -35,6 +41,12 @@ export type FaderDimKeySettings = TargetSettings & {
   /** factor モードの倍率(既定 0.1) */
   factor?: number | string;
 };
+
+/** strip ターゲットの対象バス。master は null(ステートレス) */
+export function targetBus(s: TargetSettings): Bus | null {
+  if ((s.target ?? "master") === "master") return null;
+  return (s.bus as Bus) || "output";
+}
 
 export function targetVolumeAddress(s: TargetSettings): string {
   if ((s.target ?? "master") === "master") return "/1/mastervolume";

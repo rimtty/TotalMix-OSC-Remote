@@ -19,6 +19,16 @@
         </div>
       </div>
       <div class="sdpi-item strip-only">
+        <div class="sdpi-item-label">Row</div>
+        <div class="sdpi-item-value">
+          <select data-setting="bus">
+            <option value="output">Hardware Output</option>
+            <option value="playback">Software Playback</option>
+            <option value="input">Hardware Input</option>
+          </select>
+        </div>
+      </div>
+      <div class="sdpi-item strip-only">
         <div class="sdpi-item-label">Device</div>
         <div class="sdpi-item-value"><select data-setting="device"></select></div>
       </div>
@@ -26,6 +36,7 @@
         <div class="sdpi-item-label">Channel</div>
         <div class="sdpi-item-value"><select data-setting="strip"></select></div>
       </div>
+      <div class="hint strip-only">Input/Playback faders are sends into the submix currently selected in TotalMix.</div>
       <div class="sdpi-item">
         <div class="sdpi-item-label">Title</div>
         <div class="sdpi-item-value"><input type="text" data-setting="title" placeholder="Main" /></div>

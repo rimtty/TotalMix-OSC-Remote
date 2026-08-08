@@ -29,6 +29,8 @@ node tools/poc/send-mastervolume.js 0.5
 - Fader Dial(ダイヤル回転/微調整/タッチ Mute/ロングタッチのプリセットジャンプ、タッチストリップに dB 表示)
 - Mute キー(TotalMix フィードバックと双方向同期)
 - Fader Dim キー(-20 dB 減衰⇔復元、外部変更検出つき)
+- **パッチ段(Row)指定**: 各アクションは Hardware Inputs / Software Playback / Hardware Outputs の任意の行をターゲットにできる(OSC バス切替+バス別フィードバックキャッシュ)
+- **チャンネル名のライブ取得**: 設定画面のチャンネル一覧は TotalMix の trackname フィードバックから生成(モノ分割やリネームがあっても正しいストリップ番号・名前で表示)。未接続時はデバイス定義にフォールバック
 
 ### 開発
 
