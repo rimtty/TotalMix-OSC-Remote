@@ -79,7 +79,7 @@ src/osc/
 |---|---|---|---|
 | G0 | ✅ 仕様調査+本書確定 | 本書 | 公式仕様書を入手済み |
 | G1 | 実機 PoC | `/output/<ch>/volume` への dB 送信と `/sendall` ダンプ受信を実測(tools/poc に Global 版追加) | **要: TotalMix FX 2.1 Beta のインストール(ユーザー判断)**。現行 1.9x と併存不可のため、オーディオ環境への影響を了解の上で |
-| G2 | Backend 抽象化リファクタ | 既存3アクションが Backend IF 経由で動作(クラシックのまま回帰なし) | 2.1 が無くても着手可能 |
+| G2 | ✅ Backend 抽象化リファクタ(2026-08-09 完了) | 既存3アクションが Backend IF 経由で動作(クラシックのまま回帰なし) | `src/osc/backend.ts`(IF)+ `src/osc/classic/client.ts`。アクションはアドレス/バスを知らない |
 | G3 | GlobalBackend 実装 | 3アクション+チャンネル一覧+Main 解決が Global OSC で動作 | 「実験的」フラグ付きで出荷 |
 | G4 | 新機能 | サブミックス指定センド、Dim 量設定、接続状態表示 | Global 選択時のみ有効化 |
 

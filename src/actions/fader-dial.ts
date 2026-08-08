@@ -7,15 +7,9 @@ import {
   type WillAppearEvent,
   type WillDisappearEvent,
 } from "@elgato/streamdeck";
-import { osc, type BusMessage } from "../osc/client";
+import { backend, refKey, type ChangeEvent } from "../osc";
 import { dbToFader, faderToDb, formatDb } from "../osc/taper";
-import {
-  targetBus,
-  targetMuteAddress,
-  targetVolumeAddress,
-  targetVolumeValAddress,
-  type FaderDialSettings,
-} from "../settings";
+import { targetRefOf, type FaderDialSettings } from "../settings";
 
 interface DialState {
   value: number;
@@ -31,23 +25,23 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
 
   constructor() {
     super();
-    osc.on("message", (m: BusMessage) => {
-      void this.onOscMessage(m);
+    backend.onChange((ev) => {
+      void this.onChangeEvent(ev);
     });
   }
 
   override async onWillAppear(ev: WillAppearEvent<FaderDialSettings>): Promise<void> {
     if (!("setFeedback" in ev.action)) return;
     const settings = ev.payload.settings;
-    const bus = targetBus(settings) ?? undefined;
-    const cached = osc.getFloat(targetVolumeAddress(settings), bus);
+    const ref = targetRefOf(settings);
+    const cached = backend.getFader(ref);
     const state = this.ensureState(ev.action.id, cached);
     await ev.action.setFeedback({
       title: this.titleFor(settings),
-      value: this.valueTextFor(settings, state.value),
+      value: backend.getDisplayValue(ref) ?? formatDb(faderToDb(state.value)),
       indicator: { value: Math.round(state.value * 100) },
     });
-    osc.refresh();
+    backend.refresh();
   }
 
   override onWillDisappear(ev: WillDisappearEvent<FaderDialSettings>): void {
@@ -61,11 +55,10 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
     const stepPct = Number(settings.stepPct) || 1;
     const finePct = Number(settings.fineStepPct) || 0.1;
     const step = (ev.payload.pressed ? finePct : stepPct) / 100;
-    const bus = targetBus(settings);
-    const addr = targetVolumeAddress(settings);
-    const state = this.ensureState(ev.action.id, osc.getFloat(addr, bus ?? undefined));
+    const ref = targetRefOf(settings);
+    const state = this.ensureState(ev.action.id, backend.getFader(ref));
     state.value = clamp01(state.value + ev.payload.ticks * step);
-    void osc.sendFloatTo(bus, addr, state.value);
+    void backend.setFader(ref, state.value);
     this.queueFeedback(ev.action, state, {
       value: formatDb(faderToDb(state.value)),
       indicator: Math.round(state.value * 100),
@@ -77,7 +70,7 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
     if ((settings.pushAction ?? "reset0db") === "reset0db") {
       await this.setValue(ev.action, settings, dbToFader(0));
     } else {
-      this.toggleMute(settings);
+      void backend.toggleMute(targetRefOf(settings));
     }
   }
 
@@ -87,7 +80,7 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
       const presetDb = Number(settings.presetDb ?? 0);
       await this.setValue(ev.action, settings, dbToFader(presetDb));
     } else {
-      this.toggleMute(settings);
+      void backend.toggleMute(targetRefOf(settings));
     }
   }
 
@@ -98,43 +91,29 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
   ): Promise<void> {
     const state = this.ensureState(actionRef.id, value);
     state.value = value;
-    void osc.sendFloatTo(targetBus(settings), targetVolumeAddress(settings), value);
+    void backend.setFader(targetRefOf(settings), value);
     await actionRef.setFeedback({
       value: formatDb(faderToDb(value)),
       indicator: { value: Math.round(value * 100) },
     });
   }
 
-  private toggleMute(settings: FaderDialSettings): void {
-    const muteAddr = targetMuteAddress(settings);
-    if (muteAddr) {
-      const bus = targetBus(settings);
-      const current = osc.getFloat(muteAddr, bus ?? undefined) ?? 0;
-      void osc.sendFloatTo(bus, muteAddr, current >= 0.5 ? 0 : 1);
-    } else {
-      // Main には専用 Mute が無いため Dim をトグルする
-      osc.sendFloat("/1/mainDim", 1);
-    }
-  }
-
-  private async onOscMessage(m: BusMessage): Promise<void> {
-    const value = m.args[0]?.value;
+  private async onChangeEvent(ev: ChangeEvent): Promise<void> {
+    if (ev.type === "mute") return;
     for (const visible of this.actions) {
       if (!("setFeedback" in visible)) continue;
       const settings = await visible.getSettings();
-      const bus = targetBus(settings);
-      // strip ターゲットは対象バスのフィードバックのみ反映(master はバス非依存)
-      if (bus && m.bus !== bus) continue;
+      if (ev.key !== refKey(targetRefOf(settings))) continue;
       const state = this.ensureState(visible.id, undefined);
-      if (m.address === targetVolumeAddress(settings) && typeof value === "number") {
-        state.value = value;
+      if (ev.type === "fader") {
+        state.value = ev.value;
         this.queueFeedback(visible, state, {
-          indicator: Math.round(value * 100),
-          value: formatDb(faderToDb(value)),
+          indicator: Math.round(ev.value * 100),
+          value: formatDb(faderToDb(ev.value)),
         });
-      } else if (m.address === targetVolumeValAddress(settings) && typeof value === "string") {
+      } else {
         // TotalMix からの正式な dB 表示を優先する
-        this.queueFeedback(visible, state, { value });
+        this.queueFeedback(visible, state, { value: ev.text });
       }
     }
   }
@@ -172,14 +151,10 @@ export class FaderDial extends SingletonAction<FaderDialSettings> {
 
   private titleFor(settings: FaderDialSettings): string {
     if (settings.title) return settings.title;
-    if ((settings.target ?? "master") === "master") return "Main";
-    const busLabel = { input: "In", playback: "PB", output: "Out" }[targetBus(settings) ?? "output"];
-    return `${busLabel} ${Number(settings.strip) || 1}`;
-  }
-
-  private valueTextFor(settings: FaderDialSettings, value: number): string {
-    const bus = targetBus(settings) ?? undefined;
-    return osc.getString(targetVolumeValAddress(settings), bus) ?? formatDb(faderToDb(value));
+    const ref = targetRefOf(settings);
+    if (ref.kind === "master") return "Main";
+    const busLabel = { input: "In", playback: "PB", output: "Out" }[ref.bus];
+    return `${busLabel} ${ref.strip}`;
   }
 }
 

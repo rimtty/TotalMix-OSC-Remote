@@ -1,6 +1,7 @@
 import dgram from "node:dgram";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { OscClient, type BusMessage } from "../src/osc/client";
+import type { ChangeEvent } from "../src/osc/backend";
+import { ClassicBackend } from "../src/osc/classic/client";
 import { decodePacket, encodeMessage } from "../src/osc/message";
 
 /** 偽 TotalMix: 受信パケットを記録する UDP ソケット */
@@ -45,14 +46,19 @@ function randomRecvPort(): number {
   return 29000 + Math.floor(Math.random() * 20000);
 }
 
-describe("OscClient (UDP loopback integration)", () => {
+describe("ClassicBackend (UDP loopback integration)", () => {
   let fake: FakeTotalMix;
-  let client: OscClient;
+  let client: ClassicBackend;
   let recvPort: number;
+
+  const sendToClient = (buf: Buffer) =>
+    new Promise<void>((resolve, reject) =>
+      fake.socket.send(buf, recvPort, "127.0.0.1", (err) => (err ? reject(err) : resolve())),
+    );
 
   beforeEach(async () => {
     fake = await startFake();
-    client = new OscClient();
+    client = new ClassicBackend();
     recvPort = randomRecvPort();
     client.configure({ host: "127.0.0.1", sendPort: fake.port, recvPort });
   });
@@ -73,16 +79,34 @@ describe("OscClient (UDP loopback integration)", () => {
     expect(bank?.args[0]?.value).toBe(0);
   });
 
-  it("sends fader values as Float32, never as int", async () => {
-    client.sendFloat("/1/mastervolume", 0.8172);
+  it("sends master fader as Float32 to /1/mastervolume", async () => {
+    await client.setFader({ kind: "master" }, 0.8172);
     await fake.waitFor("/1/mastervolume");
     const m = fake.received.find((x) => x.address === "/1/mastervolume");
     expect(m?.args[0]?.type).toBe("f");
     expect(m?.args[0]?.value as number).toBeCloseTo(0.8172, 4);
   });
 
+  it("switches bus before sending strip faders", async () => {
+    await fake.waitFor("/1/busOutput"); // 初期 pin 完了を待つ
+    fake.received.length = 0;
+
+    const sendDone = client.setFader({ kind: "strip", bus: "playback", strip: 4 }, 0.5);
+    await fake.waitFor("/1/busPlayback");
+    // エコーを返してバス確定させる
+    await sendToClient(encodeMessage("/1/busPlayback", [{ type: "f", value: 1 }]));
+    await sendDone;
+    await fake.waitFor("/1/volume4");
+
+    const busIdx = fake.received.findIndex((m) => m.address === "/1/busPlayback");
+    const volIdx = fake.received.findIndex((m) => m.address === "/1/volume4");
+    expect(busIdx).toBeGreaterThanOrEqual(0);
+    expect(volIdx).toBeGreaterThan(busIdx);
+    expect(client.activeBus).toBe("playback");
+  });
+
   it("caches feedback from bundle-wrapped packets", async () => {
-    await fake.waitFor("/1/busOutput"); // クライアントの bind 完了を保証
+    await fake.waitFor("/1/busOutput");
 
     const inner1 = encodeMessage("/1/mastervolume", [{ type: "f", value: 0.75 }]);
     const inner2 = encodeMessage("/1/mastervolumeVal", [{ type: "s", value: "-3.5 dB" }]);
@@ -95,53 +119,28 @@ describe("OscClient (UDP loopback integration)", () => {
     const bundle = Buffer.concat([header, s1, inner1, s2, inner2]);
 
     const got = new Promise<void>((resolve) => {
-      client.on("message", (m: { address: string }) => {
-        if (m.address === "/1/mastervolumeVal") resolve();
+      client.onChange((ev: ChangeEvent) => {
+        if (ev.type === "faderDisplay" && ev.key === "master") resolve();
       });
     });
-    fake.socket.send(bundle, recvPort, "127.0.0.1");
+    await sendToClient(bundle);
     await got;
 
-    expect(client.getFloat("/1/mastervolume")).toBeCloseTo(0.75, 4);
-    expect(client.getString("/1/mastervolumeVal")).toBe("-3.5 dB");
-  });
-
-  it("switches bus before sending bank-relative messages (sendFloatTo)", async () => {
-    await fake.waitFor("/1/busOutput"); // 初期 pin 完了を待つ
-    fake.received.length = 0;
-
-    const sendDone = client.sendFloatTo("playback", "/1/volume4", 0.5);
-    await fake.waitFor("/1/busPlayback");
-    // エコーを返してバス確定させる
-    fake.socket.send(encodeMessage("/1/busPlayback", [{ type: "f", value: 1 }]), recvPort, "127.0.0.1");
-    await sendDone;
-    await fake.waitFor("/1/volume4");
-
-    const busIdx = fake.received.findIndex((m) => m.address === "/1/busPlayback");
-    const volIdx = fake.received.findIndex((m) => m.address === "/1/volume4");
-    expect(busIdx).toBeGreaterThanOrEqual(0);
-    expect(volIdx).toBeGreaterThan(busIdx);
-    const bankStart = fake.received.find((m) => m.address === "/setBankStart");
-    expect(bankStart?.args[0]?.type).toBe("f");
-    expect(client.activeBus).toBe("playback");
+    expect(client.getFader({ kind: "master" })).toBeCloseTo(0.75, 4);
+    expect(client.getDisplayValue({ kind: "master" })).toBe("-3.5 dB");
   });
 
   it("namespaces bank-relative feedback per bus", async () => {
     await fake.waitFor("/1/busOutput");
 
-    const received: string[] = [];
-    client.on("message", (m: BusMessage) => received.push(`${m.bus}${m.address}`));
-
-    const sendToClient = (buf: Buffer) =>
-      new Promise<void>((resolve, reject) =>
-        fake.socket.send(buf, recvPort, "127.0.0.1", (err) => (err ? reject(err) : resolve())),
-      );
-    const until = (marker: string, timeoutMs = 2000) =>
+    const events: ChangeEvent[] = [];
+    client.onChange((ev) => events.push(ev));
+    const until = (pred: (ev: ChangeEvent) => boolean, timeoutMs = 2000) =>
       new Promise<void>((resolve, reject) => {
         const deadline = Date.now() + timeoutMs;
         const poll = () => {
-          if (received.includes(marker)) return resolve();
-          if (Date.now() > deadline) return reject(new Error(`timeout waiting for ${marker}`));
+          if (events.some(pred)) return resolve();
+          if (Date.now() > deadline) return reject(new Error("timeout waiting for event"));
           setTimeout(poll, 10);
         };
         poll();
@@ -150,16 +149,41 @@ describe("OscClient (UDP loopback integration)", () => {
     // input バスのダンプ: バスエコー → volume3
     await sendToClient(encodeMessage("/1/busInput", [{ type: "f", value: 1 }]));
     await sendToClient(encodeMessage("/1/volume3", [{ type: "f", value: 0.25 }]));
-    await until("input/1/volume3");
+    await until((ev) => ev.type === "fader" && ev.key === "input:3");
 
     // output バスへ切替 → 同じ volume3 に別の値
     await sendToClient(encodeMessage("/1/busOutput", [{ type: "f", value: 1 }]));
     await sendToClient(encodeMessage("/1/volume3", [{ type: "f", value: 0.75 }]));
-    await until("output/1/volume3");
+    await until((ev) => ev.type === "fader" && ev.key === "output:3");
 
-    expect(client.getFloat("/1/volume3", "input")).toBeCloseTo(0.25, 4);
-    expect(client.getFloat("/1/volume3", "output")).toBeCloseTo(0.75, 4);
-    // バス非依存アドレスは名前空間化されない
-    expect(client.getFloat("/1/mastervolume", "input")).toBe(client.getFloat("/1/mastervolume", "output"));
+    expect(client.getFader({ kind: "strip", bus: "input", strip: 3 })).toBeCloseTo(0.25, 4);
+    expect(client.getFader({ kind: "strip", bus: "output", strip: 3 })).toBeCloseTo(0.75, 4);
+  });
+
+  it("maps feedback to normalized change events (mute, mainDim)", async () => {
+    await fake.waitFor("/1/busOutput");
+
+    const events: ChangeEvent[] = [];
+    client.onChange((ev) => events.push(ev));
+    const until = (pred: (ev: ChangeEvent) => boolean, timeoutMs = 2000) =>
+      new Promise<void>((resolve, reject) => {
+        const deadline = Date.now() + timeoutMs;
+        const poll = () => {
+          if (events.some(pred)) return resolve();
+          if (Date.now() > deadline) return reject(new Error("timeout waiting for event"));
+          setTimeout(poll, 10);
+        };
+        poll();
+      });
+
+    await sendToClient(encodeMessage("/1/busOutput", [{ type: "f", value: 1 }]));
+    await sendToClient(encodeMessage("/1/mute/1/10", [{ type: "f", value: 1 }]));
+    await until((ev) => ev.type === "mute" && ev.key === "output:10" && ev.value === true);
+
+    await sendToClient(encodeMessage("/1/mainDim", [{ type: "f", value: 1 }]));
+    await until((ev) => ev.type === "mute" && ev.key === "master" && ev.value === true);
+
+    expect(client.getMute({ kind: "strip", bus: "output", strip: 10 })).toBe(true);
+    expect(client.getMute({ kind: "master" })).toBe(true);
   });
 });

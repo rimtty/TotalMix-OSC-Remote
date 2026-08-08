@@ -5,9 +5,9 @@ import {
   type WillAppearEvent,
   type WillDisappearEvent,
 } from "@elgato/streamdeck";
-import { osc, type BusMessage } from "../osc/client";
+import { backend, refKey, type ChangeEvent } from "../osc";
 import { dbToFader, faderToDb } from "../osc/taper";
-import { targetBus, targetVolumeAddress, type FaderDimKeySettings } from "../settings";
+import { targetRefOf, type FaderDimKeySettings } from "../settings";
 
 interface DimState {
   original: number;
@@ -29,8 +29,8 @@ export class FaderDimKey extends SingletonAction<FaderDimKeySettings> {
 
   constructor() {
     super();
-    osc.on("message", (m: BusMessage) => {
-      void this.onOscMessage(m);
+    backend.onChange((ev) => {
+      void this.onChangeEvent(ev);
     });
   }
 
@@ -38,7 +38,7 @@ export class FaderDimKey extends SingletonAction<FaderDimKeySettings> {
     if ("setState" in ev.action) {
       await ev.action.setState(this.dims.has(ev.action.id) ? 1 : 0);
     }
-    osc.refresh();
+    backend.refresh();
   }
 
   override onWillDisappear(ev: WillDisappearEvent<FaderDimKeySettings>): void {
@@ -48,34 +48,30 @@ export class FaderDimKey extends SingletonAction<FaderDimKeySettings> {
 
   override async onKeyDown(ev: KeyDownEvent<FaderDimKeySettings>): Promise<void> {
     const settings = ev.payload.settings;
-    const bus = targetBus(settings);
-    const addr = targetVolumeAddress(settings);
+    const ref = targetRefOf(settings);
     const active = this.dims.get(ev.action.id);
 
     if (active) {
       // 復元
       this.dims.delete(ev.action.id);
-      await osc.sendFloatTo(bus, addr, active.original);
+      await backend.setFader(ref, active.original);
       await ev.action.setState(0);
       return;
     }
 
-    // バス切替を挟む場合は状態ダンプを待って最新値を読む
-    if (bus) {
-      const { switched } = await osc.ensureBus(bus);
-      if (switched) await delay(250);
-    }
-    const current = osc.getFloat(addr, bus ?? undefined);
+    // バス切替等が必要な場合は状態同期を待って最新値を読む
+    await backend.prepare(ref);
+    const current = backend.getFader(ref);
     if (current === undefined) {
       // 現在値が未取得のままだと復元先が不明で危険なため、何もせず再同期する
-      osc.refresh();
+      backend.refresh();
       await ev.action.showAlert();
       return;
     }
 
     const dimmed = this.computeDimmed(settings, current);
     this.dims.set(ev.action.id, { original: current, dimmed });
-    await osc.sendFloatTo(bus, addr, dimmed);
+    await backend.setFader(ref, dimmed);
     await ev.action.setState(1);
   }
 
@@ -88,26 +84,19 @@ export class FaderDimKey extends SingletonAction<FaderDimKeySettings> {
     return dbToFader(faderToDb(value) + dimDb);
   }
 
-  private async onOscMessage(m: BusMessage): Promise<void> {
-    const value = m.args[0]?.value;
-    if (typeof value !== "number") return;
+  private async onChangeEvent(ev: ChangeEvent): Promise<void> {
+    if (ev.type !== "fader") return;
     for (const visible of this.actions) {
       if (!("setState" in visible)) continue;
       const dim = this.dims.get(visible.id);
       if (!dim) continue;
       const settings = await visible.getSettings();
-      const bus = targetBus(settings);
-      if (bus && m.bus !== bus) continue;
-      if (m.address !== targetVolumeAddress(settings)) continue;
-      if (Math.abs(value - dim.dimmed) > FaderDimKey.EXTERNAL_CHANGE_EPSILON) {
+      if (ev.key !== refKey(targetRefOf(settings))) continue;
+      if (Math.abs(ev.value - dim.dimmed) > FaderDimKey.EXTERNAL_CHANGE_EPSILON) {
         // 外部で値が動いた → 記憶値は無効。復元すると爆音になり得るため破棄
         this.dims.delete(visible.id);
         await visible.setState(0);
       }
     }
   }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
