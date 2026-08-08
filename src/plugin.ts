@@ -56,3 +56,12 @@ applyGlobalSettings(globals ?? {});
 osc.on("status", (status: string) => {
   streamDeck.logger.info(`OSC status: ${status} ${osc.statusDetail ?? ""}`);
 });
+
+// 起動直後のフィードバック確認用(SDK ログ、TRACE 相当の軽量サンプリング)
+let rxLogged = 0;
+osc.on("message", (m: { address: string; args: { value: number | string }[] }) => {
+  if (rxLogged < 10) {
+    rxLogged++;
+    streamDeck.logger.debug(`OSC rx ${m.address} ${JSON.stringify(m.args.map((a) => a.value))}`);
+  }
+});

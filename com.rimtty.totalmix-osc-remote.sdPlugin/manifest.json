@@ -12,7 +12,7 @@
   "CodePath": "bin/plugin.mjs",
   "SDKVersion": 3,
   "Nodejs": {
-    "Version": "24",
+    "Version": "20",
     "Debug": "enabled"
   },
   "Software": {
