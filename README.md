@@ -24,4 +24,18 @@ node tools/poc/send-mastervolume.js 0.5
 
 ## ステータス
 
-計画フェーズ。実装は未着手。
+**v0.1.0 実装済み・実機検証済み**(2026-08-08、Fireface UCX II + Stream Deck +)
+
+- Fader Dial(ダイヤル回転/微調整/タッチ Mute/ロングタッチのプリセットジャンプ、タッチストリップに dB 表示)
+- Mute キー(TotalMix フィードバックと双方向同期)
+- Fader Dim キー(-20 dB 減衰⇔復元、外部変更検出つき)
+
+### 開発
+
+```bash
+npm install
+npm run build
+npm test
+```
+
+ローカル実機テストは `npx @elgato/cli link com.rimtty.totalmix-osc-remote.sdPlugin` でリンク後、`npx @elgato/cli restart com.rimtty.totalmix-osc-remote` で反映(要開発者モード `streamdeck dev`)。TotalMix FX 側は Options → Settings → OSC で In Use / Port incoming 7001 / Port outgoing 9001 / バンクサイズ 16 を設定。
