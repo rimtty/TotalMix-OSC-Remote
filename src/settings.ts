@@ -1,6 +1,6 @@
 /** Shared settings types for actions and the Property Inspector. */
 
-import type { Bus } from "./osc/client";
+import type { Bus, TargetRef } from "./osc/backend";
 
 export type GlobalSettings = {
   host?: string;
@@ -10,8 +10,8 @@ export type GlobalSettings = {
 
 /**
  * ターゲット共通:
- * - master: Control Room の Main フェーダー(/1/mastervolume、バス非依存)
- * - strip:  指定バス(パッチ段)の出力/入力/再生ストリップ
+ * - master: Control Room の Main フェーダー
+ * - strip:  指定バス(パッチ段)のストリップ
  */
 export type TargetSettings = {
   target?: "master" | "strip";
@@ -42,24 +42,12 @@ export type FaderDimKeySettings = TargetSettings & {
   factor?: number | string;
 };
 
-/** strip ターゲットの対象バス。master は null(ステートレス) */
-export function targetBus(s: TargetSettings): Bus | null {
-  if ((s.target ?? "master") === "master") return null;
-  return (s.bus as Bus) || "output";
-}
-
-export function targetVolumeAddress(s: TargetSettings): string {
-  if ((s.target ?? "master") === "master") return "/1/mastervolume";
-  return `/1/volume${Number(s.strip) || 1}`;
-}
-
-export function targetVolumeValAddress(s: TargetSettings): string {
-  if ((s.target ?? "master") === "master") return "/1/mastervolumeVal";
-  return `/1/volume${Number(s.strip) || 1}Val`;
-}
-
-/** master には専用 Mute が無いため null(呼び出し側で mainDim 等にフォールバック) */
-export function targetMuteAddress(s: TargetSettings): string | null {
-  if ((s.target ?? "master") === "master") return null;
-  return `/1/mute/1/${Number(s.strip) || 1}`;
+/** アクション設定 → バックエンドのターゲット参照 */
+export function targetRefOf(s: TargetSettings): TargetRef {
+  if ((s.target ?? "master") === "master") return { kind: "master" };
+  return {
+    kind: "strip",
+    bus: (s.bus as Bus) || "output",
+    strip: Number(s.strip) || 1,
+  };
 }

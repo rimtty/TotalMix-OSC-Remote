@@ -10,7 +10,7 @@
  * TotalMix からの trackname フィードバック(ライブ取得)を優先する。
  */
 
-import type { Bus } from "../osc/client";
+import type { Bus } from "../osc/backend";
 
 export interface Strip {
   /** 1-based strip index → /1/volume{strip}, /1/mute/1/{strip} */
