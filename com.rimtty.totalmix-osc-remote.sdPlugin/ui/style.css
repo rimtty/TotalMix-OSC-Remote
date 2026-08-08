@@ -67,7 +67,7 @@ select {
 
 input:focus,
 select:focus {
-  outline: 1px solid #f5a623;
+  outline: 1px solid #21d24c;
 }
 
 .hint {
