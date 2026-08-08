@@ -26,7 +26,7 @@ export type OscStatus = "stopped" | "listening" | "error";
  * - 受信値はキャッシュし "message" イベントで配信する。受信値の再送信は
  *   TotalMix 側の丸めで音量がクリープするため行わない
  */
-class OscClient extends EventEmitter {
+export class OscClient extends EventEmitter {
   private socket?: dgram.Socket;
   private config: OscConfig = { ...DEFAULT_CONFIG };
   private cache = new Map<string, number | string>();
