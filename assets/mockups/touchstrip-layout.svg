@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
+  <!-- Stream Deck + touch strip slot: 200x100 px, custom layout mockup -->
+  <rect x="0" y="0" width="200" height="100" fill="#000000"/>
+  <!-- knob icon (left) -->
+  <g transform="translate(10,26)">
+    <circle cx="24" cy="24" r="22" fill="#1c1c1f" stroke="#55555c" stroke-width="2"/>
+    <path d="M 8.4 39.6 A 22 22 0 0 1 8.4 8.4" fill="none" stroke="#f5a623" stroke-width="3" stroke-linecap="round"/>
+    <line x1="24" y1="24" x2="11" y2="12" stroke="#f5a623" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="24" cy="24" r="3.5" fill="#f5a623"/>
+  </g>
+  <!-- title -->
+  <text x="66" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#ffffff">Main</text>
+  <!-- dB value -->
+  <text x="192" y="52" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#f5a623" text-anchor="end">-12.0 dB</text>
+  <!-- bar -->
+  <rect x="66" y="66" width="126" height="14" rx="7" fill="#2a2a2e" stroke="#4a4a50" stroke-width="1"/>
+  <rect x="66" y="66" width="78" height="14" rx="7" fill="#f5a623"/>
+</svg>

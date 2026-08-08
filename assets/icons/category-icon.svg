@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56">
+  <!-- category icon: monochrome white on transparent -->
+  <circle cx="28" cy="24" r="15" fill="none" stroke="#FFFFFF" stroke-width="3.5"/>
+  <line x1="28" y1="24" x2="19" y2="16" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M 10 47 q 4.5 -7 9 0 t 9 0 t 9 0 t 9 0" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+</svg>

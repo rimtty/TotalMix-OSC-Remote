@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">
+  <!-- Encoder action icon: fader knob (transparent bg for touch strip) -->
+  <circle cx="72" cy="72" r="44" fill="#1c1c1f" stroke="#55555c" stroke-width="4"/>
+  <circle cx="72" cy="72" r="33" fill="#26262a"/>
+  <!-- tick marks -->
+  <g stroke="#6a6a72" stroke-width="3" stroke-linecap="round">
+    <line x1="40" y1="104" x2="45" y2="99"/>
+    <line x1="27" y1="72" x2="34" y2="72"/>
+    <line x1="40" y1="40" x2="45" y2="45"/>
+    <line x1="72" y1="27" x2="72" y2="34"/>
+    <line x1="104" y1="40" x2="99" y2="45"/>
+    <line x1="117" y1="72" x2="110" y2="72"/>
+    <line x1="104" y1="104" x2="99" y2="99"/>
+  </g>
+  <!-- value arc -->
+  <path d="M 41 103 A 44 44 0 0 1 41 41" fill="none" stroke="#f5a623" stroke-width="6" stroke-linecap="round"/>
+  <!-- pointer -->
+  <line x1="72" y1="72" x2="46" y2="49" stroke="#f5a623" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="72" cy="72" r="7" fill="#f5a623"/>
+</svg>

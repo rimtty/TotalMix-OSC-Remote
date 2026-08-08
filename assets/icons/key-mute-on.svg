@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d1414"/>
+      <stop offset="1" stop-color="#1a0808"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="144" height="144" rx="16" fill="url(#bg)"/>
+  <rect x="4" y="4" width="136" height="136" rx="13" fill="none" stroke="#e03c3c" stroke-width="4"/>
+  <!-- speaker body -->
+  <path d="M 38 58 h 16 l 20 -18 v 64 l -20 -18 h -16 z" fill="#e03c3c"/>
+  <!-- X mark -->
+  <g stroke="#e03c3c" stroke-width="8" stroke-linecap="round">
+    <line x1="88" y1="58" x2="112" y2="86"/>
+    <line x1="112" y1="58" x2="88" y2="86"/>
+  </g>
+  <text x="72" y="132" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#e03c3c" text-anchor="middle">MUTE</text>
+</svg>

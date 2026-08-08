@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <!-- action list icon: monochrome white on transparent -->
+  <circle cx="20" cy="20" r="13" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+  <line x1="20" y1="20" x2="12" y2="13" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  <line x1="8" y1="33" x2="11" y2="30" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="33" x2="29" y2="30" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

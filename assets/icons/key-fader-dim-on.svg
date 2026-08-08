@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d2a0a"/>
+      <stop offset="1" stop-color="#1a1204"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="144" height="144" rx="16" fill="url(#bg)"/>
+  <rect x="4" y="4" width="136" height="136" rx="13" fill="none" stroke="#f5a623" stroke-width="4"/>
+  <!-- speaker body -->
+  <path d="M 34 56 h 14 l 18 -16 v 56 l -18 -16 h -14 z" fill="#f5a623"/>
+  <!-- single small wave -->
+  <path d="M 76 56 a 14 14 0 0 1 0 24" fill="none" stroke="#f5a623" stroke-width="6" stroke-linecap="round"/>
+  <!-- down arrow -->
+  <g stroke="#f5a623" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="104" y1="46" x2="104" y2="86"/>
+    <path d="M 92 74 l 12 12 l 12 -12"/>
+  </g>
+  <text x="72" y="132" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#f5a623" text-anchor="middle">DIM</text>
+</svg>

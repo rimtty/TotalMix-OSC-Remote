@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.log
+com.rimtty.totalmix-osc-remote.sdPlugin/bin/
+.DS_Store
+Thumbs.db
